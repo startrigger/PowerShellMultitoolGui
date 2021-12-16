@@ -1,0 +1,43 @@
+#make sure other jobs in session are closed if possible
+"server1","server2" | % {
+	start-job -Name ("vacsChk"+$_) -ArgumentList $_ -scriptblock {
+		function Chk-VacsServer {
+			param ($strServername)
+			if(test-connection $strServername -count 1 -quiet) {
+				$os = Get-WmiObject win32_OperatingSystem -cn $strServername;
+				$objDisks = Get-WMIObject Win32_Logicaldisk -cn $strServername;
+				$cpuInfo = (Get-Counter -cn $strServername '\Processor(_Total)\% Processor Time').countersamples.cookedvalue;
+				$memInfo = (Get-Counter -cn $strServername '\Memory\Available MBytes').readings.tostring();
+				$strDisks = ""
+				foreach ($disk in $objDisks)  
+				{ 
+					if ($disk.Size -gt 0) 
+					{ 
+						$size = [math]::round($disk.Size/1GB, 0) 
+						$free = [math]::round($disk.FreeSpace/1GB, 0) 
+						$strDisks = $strDisks + "Disk:" + $disk.Name + " Size:" + $size.tostring() + "GB Free:" + $free.tostring() + "GB  "
+					} 
+				}
+				$vacsProp = [PSCustomObject]@{
+				server = $strServername
+				CPU = ([math]::round($cpuInfo,2)).tostring() + "%"
+				MEM = $memInfo.substring($memInfo.indexof(":")+1).trim()
+				DISK = $strDisks
+				dfs = (Get-service -cn $strServername -name dfs).status
+				dfsr = (Get-service -cn $strServername -name dfsr).status
+				}
+			} else {
+				$vacsProp = [PSCustomObject]@{
+				server = $strServername
+				CPU = "conn fail"
+				MEM = "conn fail"
+				DISK = "conn fail"
+				dfs = "conn fail"
+				dfsr = "conn fail"
+				}		
+			}
+			$vacsProp
+		}
+		Chk-VacsServer $args
+	}
+} | wait-job -Timeout 30 | receive-job -wait -autoremovejob |out-gridview
