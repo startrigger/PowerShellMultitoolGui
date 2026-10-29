@@ -442,7 +442,7 @@ $pscript = @'
     # 
     # 
 	# 
-	$arrTarget | %{$_; Get-ADUser -Filter "SamAccountName -eq ""$($_.substring(0,$_.indexof(",")))""" -SearchBase "" -Server VHAR023DC3.r02.med.va.gov:3268}
+	$arrTarget | %{$_; Get-ADUser -Filter "SamAccountName -eq ""$($_.substring(0,$_.indexof(",")))""" -SearchBase "" -Server spaceghost.com:3268}
 '@
 [void] $ComboBox1_PickGroup.Items.Add((CreateComboboxItem -cboDisplay "Lookup Bigfix users list in AD" -cbovalue $pscript))
 # All code that is visible to form must be inserted before this line.
